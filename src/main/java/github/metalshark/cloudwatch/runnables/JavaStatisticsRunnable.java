@@ -2,7 +2,6 @@ package github.metalshark.cloudwatch.runnables;
 
 import com.sun.management.UnixOperatingSystemMXBean;
 import github.metalshark.cloudwatch.CloudWatch;
-import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
 
@@ -14,12 +13,6 @@ public class JavaStatisticsRunnable implements Runnable {
 
     private static double prevTotalGarbageCollections = 0;
     private static double prevTotalGarbageCollectionTime = 0;
-
-    private final static Dimension dimension = Dimension
-        .builder()
-        .name("Per-Instance Metrics")
-        .value(EC2MetadataUtils.getInstanceId())
-        .build();
 
     public void run() {
         final boolean firstRun = (prevTotalGarbageCollections + prevTotalGarbageCollectionTime) == 0;
@@ -77,6 +70,8 @@ public class JavaStatisticsRunnable implements Runnable {
             processCpuLoad = unixOs.getProcessCpuLoad() * 100;
             systemCpuLoad = unixOs.getSystemCpuLoad() * 100;
         }
+
+        final Dimension dimension = CloudWatch.getDimension();
 
         try (final CloudWatchClient cw = CloudWatchClient.builder().build()) {
             final MetricDatum garbageCollectionsMetric = MetricDatum
