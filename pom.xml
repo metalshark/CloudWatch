@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>github.metalshark.cloudwatch</groupId>
+    <artifactId>CloudWatch</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <name>CloudWatch</name>
+    <description>CloudWatch statistic logging for Minecraft Servers.</description>
+    <url>https://github.com/${author}/${project.name}</url>
+
+    <properties>
+        <!-- Removes warnings -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Used in plugin.yml -->
+        <mainClass>${project.groupId}.${project.artifactId}</mainClass>
+        <!-- Also used in plugin.yml -->
+        <author>metalshark</author>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/${author}/${project.name}/issues</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:https://github.com/${author}/${project.name}.git</connection>
+        <url>https://github.com/${author}/${project.name}</url>
+    </scm>
+
+    <build>
+        <!-- Uses the properties in this file for plugin.yml and config.yml -->
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin.yml</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- Sets the Java version to 8 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <!-- Sets the custom JAR file name (Project name without spaces is good) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <finalName>${project.name}-${project.version}</finalName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>com.amazonaws</pattern>
+                            <shadedPattern>${project.groupId}.dependencies.com.amazonaws</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.http</pattern>
+                            <shadedPattern>${project.groupId}.dependencies.org.apache.http</shadedPattern>
+                        </relocation>
+                    </relocations>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <minimizeJar>false</minimizeJar>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+
+        <!-- Spigot MC -->
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+
+        <!-- Maven Central -->
+        <repository>
+            <id>mvn-central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+
+    </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>1.11.756</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+
+        <!-- AWS CloudWatch -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-cloudwatch</artifactId>
+        </dependency>
+
+        <!-- Bukkit -->
+        <dependency>
+            <groupId>org.bukkit</groupId>
+            <artifactId>bukkit</artifactId>
+            <version>1.14-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.12</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+</project>
