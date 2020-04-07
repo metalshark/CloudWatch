@@ -6,7 +6,7 @@
 
     <groupId>github.metalshark.cloudwatch</groupId>
     <artifactId>CloudWatch</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <name>CloudWatch</name>
     <description>CloudWatch statistic logging for Minecraft Servers.</description>
@@ -131,7 +131,7 @@
         <dependency>
             <groupId>org.bukkit</groupId>
             <artifactId>bukkit</artifactId>
-            <version>1.14-R0.1-SNAPSHOT</version>
+            <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
