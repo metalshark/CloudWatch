@@ -1,17 +1,25 @@
 package github.metalshark.cloudwatch.runnables;
 
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
-import com.amazonaws.services.cloudwatch.model.*;
+import com.sun.management.UnixOperatingSystemMXBean;
 import github.metalshark.cloudwatch.CloudWatch;
+import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.*;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryManagerMXBean;
+import java.lang.management.OperatingSystemMXBean;
 
 public class JavaStatisticsRunnable implements Runnable {
 
     private static double prevTotalGarbageCollections = 0;
     private static double prevTotalGarbageCollectionTime = 0;
+
+    private final static Dimension dimension = Dimension
+        .builder()
+        .name("Per-Instance Metrics")
+        .value(EC2MetadataUtils.getInstanceId())
+        .build();
 
     public void run() {
         final boolean firstRun = (prevTotalGarbageCollections + prevTotalGarbageCollectionTime) == 0;
@@ -43,48 +51,159 @@ public class JavaStatisticsRunnable implements Runnable {
 
         // Get current size of heap in bytes
         final double heapSize = Runtime.getRuntime().totalMemory();
-
         // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
         final double heapMaxSize = Runtime.getRuntime().maxMemory();
-
         // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
         final double heapFreeSize = Runtime.getRuntime().freeMemory();
+        final double heapUsedSize = heapSize - heapFreeSize;
 
         final double threadCount = ManagementFactory.getThreadMXBean().getThreadCount();
 
-        final AmazonCloudWatch cw = CloudWatch.getPlugin().getCw();
-        final MetricDatum garbageCollectionsMetric = new MetricDatum()
-            .withMetricName("GarbageCollections")
-            .withUnit(StandardUnit.Count)
-            .withValue(garbageCollections);
-        final MetricDatum garbageCollectionTimeMetric = new MetricDatum()
-            .withMetricName("GarbageCollectionTime")
-            .withUnit(StandardUnit.Milliseconds)
-            .withValue(garbageCollectionTime);
-        final MetricDatum heapSizeMetric = new MetricDatum()
-            .withMetricName("HeapSize")
-            .withUnit(StandardUnit.Bytes)
-            .withValue(heapSize);
-        final MetricDatum heapMaxSizeMetric = new MetricDatum()
-            .withMetricName("HeapMaxSize")
-            .withUnit(StandardUnit.Bytes)
-            .withValue(heapMaxSize);
-        final MetricDatum heapFreeSizeMetric = new MetricDatum()
-            .withMetricName("HeapFreeSize")
-            .withUnit(StandardUnit.Bytes)
-            .withValue(heapFreeSize);
-        final MetricDatum threadCountMetric = new MetricDatum()
-            .withMetricName("Threads")
-            .withUnit(StandardUnit.Count)
-            .withValue(threadCount);
-        final MetricDatum[] metrics = new MetricDatum[]{garbageCollectionsMetric, garbageCollectionTimeMetric, heapSizeMetric, heapMaxSizeMetric, heapFreeSizeMetric, threadCountMetric};
-        final PutMetricDataRequest request = new PutMetricDataRequest()
-            .withNamespace("Java")
-            .withMetricData(metrics);
-        try {
-            final PutMetricDataResult result = cw.putMetricData(request);
-        } catch (Exception e) {
-            CloudWatch.getPlugin().getLogger().warning(e.getMessage());
+        double openFileDescriptors = 0;
+        double maxFileDescriptors = 0;
+        double totalPhysicalMemorySize = 0;
+        double freePhysicalMemorySize = 0;
+        double usedPhysicalMemorySize = 0;
+        double processCpuLoad = 0;
+        double systemCpuLoad = 0;
+        final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+        if (os instanceof UnixOperatingSystemMXBean) {
+            final UnixOperatingSystemMXBean unixOs = (UnixOperatingSystemMXBean) os;
+            openFileDescriptors = unixOs.getOpenFileDescriptorCount();
+            maxFileDescriptors = unixOs.getMaxFileDescriptorCount();
+            totalPhysicalMemorySize = unixOs.getTotalPhysicalMemorySize();
+            freePhysicalMemorySize = unixOs.getFreePhysicalMemorySize();
+            usedPhysicalMemorySize = totalPhysicalMemorySize - freePhysicalMemorySize;
+            processCpuLoad = unixOs.getProcessCpuLoad() * 100;
+            systemCpuLoad = unixOs.getSystemCpuLoad() * 100;
+        }
+
+        try (final CloudWatchClient cw = CloudWatchClient.builder().build()) {
+            final MetricDatum garbageCollectionsMetric = MetricDatum
+                .builder()
+                .metricName("GarbageCollections")
+                .unit(StandardUnit.COUNT)
+                .value(garbageCollections)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum garbageCollectionTimeMetric = MetricDatum
+                .builder()
+                .metricName("GarbageCollectionTime")
+                .unit(StandardUnit.MILLISECONDS)
+                .value(garbageCollectionTime)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum heapSizeMetric = MetricDatum
+                .builder()
+                .metricName("HeapSize")
+                .unit(StandardUnit.BYTES)
+                .value(heapSize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum heapMaxSizeMetric = MetricDatum
+                .builder()
+                .metricName("HeapMaxSize")
+                .unit(StandardUnit.BYTES)
+                .value(heapMaxSize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum heapFreeSizeMetric = MetricDatum
+                .builder()
+                .metricName("HeapFreeSize")
+                .unit(StandardUnit.BYTES)
+                .value(heapFreeSize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum heapUsedSizeMetric = MetricDatum
+                .builder()
+                .metricName("HeapUsedSize")
+                .unit(StandardUnit.BYTES)
+                .value(heapUsedSize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum threadCountMetric = MetricDatum
+                .builder()
+                .metricName("Threads")
+                .unit(StandardUnit.BYTES)
+                .value(threadCount)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum openFileDescriptorsMetric = MetricDatum
+                .builder()
+                .metricName("OpenFileDescriptors")
+                .unit(StandardUnit.COUNT)
+                .value(openFileDescriptors)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum maxFileDescriptorsMetric = MetricDatum
+                .builder()
+                .metricName("MaxFileDescriptors")
+                .unit(StandardUnit.COUNT)
+                .value(maxFileDescriptors)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum totalPhysicalMemorySizeMetric = MetricDatum
+                .builder()
+                .metricName("TotalPhysicalMemorySize")
+                .unit(StandardUnit.BYTES)
+                .value(totalPhysicalMemorySize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum freePhysicalMemorySizeMetric = MetricDatum
+                .builder()
+                .metricName("FreePhysicalMemorySize")
+                .unit(StandardUnit.BYTES)
+                .value(freePhysicalMemorySize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum usedPhysicalMemorySizeMetric = MetricDatum
+                .builder()
+                .metricName("UsedPhysicalMemorySize")
+                .unit(StandardUnit.BYTES)
+                .value(usedPhysicalMemorySize)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum processCpuLoadMetric = MetricDatum
+                .builder()
+                .metricName("ProcessCpuLoad%")
+                .unit(StandardUnit.PERCENT)
+                .value(processCpuLoad)
+                .dimensions(dimension)
+                .build();
+            final MetricDatum systemCpuLoadMetric = MetricDatum
+                .builder()
+                .metricName("SystemCpuLoad%")
+                .unit(StandardUnit.PERCENT)
+                .value(systemCpuLoad)
+                .dimensions(dimension)
+                .build();
+
+            final MetricDatum[] metrics = new MetricDatum[]{
+                garbageCollectionsMetric,
+                garbageCollectionTimeMetric,
+                heapSizeMetric,
+                heapMaxSizeMetric,
+                heapFreeSizeMetric,
+                heapUsedSizeMetric,
+                threadCountMetric,
+                openFileDescriptorsMetric,
+                maxFileDescriptorsMetric,
+                totalPhysicalMemorySizeMetric,
+                freePhysicalMemorySizeMetric,
+                usedPhysicalMemorySizeMetric,
+                processCpuLoadMetric,
+                systemCpuLoadMetric
+            };
+
+            final PutMetricDataRequest request = PutMetricDataRequest
+                .builder()
+                .namespace("Java")
+                .metricData(metrics)
+                .build();
+
+            final PutMetricDataResponse result = cw.putMetricData(request);
+        } catch (CloudWatchException e) {
+            CloudWatch.getPlugin().getLogger().severe(e.awsErrorDetails().errorMessage());
         }
     }
 
