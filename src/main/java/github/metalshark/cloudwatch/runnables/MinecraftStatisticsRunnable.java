@@ -16,7 +16,7 @@ public class MinecraftStatisticsRunnable implements Runnable {
         final Dimension dimension = CloudWatch.getDimension();
 
         final ChunkLoadListener chunkLoadListener = plugin.getChunkLoadListener();
-        final double chunksLoaded = chunkLoadListener.getCount();
+        final double chunksLoaded = chunkLoadListener.getMaxAndReset();
 
         final PlayerJoinListener playerJoinListener = plugin.getPlayerJoinListener();
         final double onlinePlayers = playerJoinListener.getMaxOnlinePlayersAndReset();
