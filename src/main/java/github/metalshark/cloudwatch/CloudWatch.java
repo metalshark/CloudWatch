@@ -8,16 +8,7 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.inventory.*;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerExpChangeEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
-import org.bukkit.event.world.ChunkPopulateEvent;
-import org.bukkit.event.world.ChunkUnloadEvent;
-import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
@@ -50,23 +41,28 @@ public class CloudWatch extends JavaPlugin {
 
         pluginManager.registerEvents(playerJoinListener, this);
 
-        eventCountListeners.put("ChunksLoaded", new EventCountListener<ChunkLoadEvent>());
-        eventCountListeners.put("ChunksPopulated", new EventCountListener<ChunkPopulateEvent>());
-        eventCountListeners.put("ChunksUnloaded", new EventCountListener<ChunkUnloadEvent>());
-        eventCountListeners.put("CreaturesSpawned", new EventCountListener<CreatureSpawnEvent>());
-        eventCountListeners.put("EntityDeaths", new EventCountListener<EntityDeathEvent>());
-        eventCountListeners.put("InventoriesClosed", new EventCountListener<InventoryCloseEvent>());
-        eventCountListeners.put("InventoriesOpened", new EventCountListener<InventoryOpenEvent>());
-        eventCountListeners.put("InventoryClicks", new EventCountListener<InventoryClickEvent>());
-        eventCountListeners.put("InventoryDrags", new EventCountListener<InventoryDragEvent>());
-        eventCountListeners.put("ItemsDespawned", new EventCountListener<ItemSpawnEvent>());
-        eventCountListeners.put("ItemsSpawned", new EventCountListener<ItemDespawnEvent>());
-        eventCountListeners.put("PlayerDropItems", new EventCountListener<PlayerDropItemEvent>());
-        eventCountListeners.put("PlayerExperienceChanges", new EventCountListener<PlayerExpChangeEvent>());
-        eventCountListeners.put("PlayerInteractions", new EventCountListener<PlayerInteractEvent>());
-        eventCountListeners.put("ProjectilesLaunched", new EventCountListener<ProjectileLaunchEvent>());
-        eventCountListeners.put("StructuresGrown", new EventCountListener<StructureGrowEvent>());
-        eventCountListeners.put("TradeSelects", new EventCountListener<TradeSelectEvent>());
+        eventCountListeners.put("ChunksLoaded", new ChunkLoadListener());
+        eventCountListeners.put("ChunksPopulated", new ChunkPopulateListener());
+        eventCountListeners.put("ChunksUnloaded", new ChunkUnloadListener());
+        eventCountListeners.put("CreaturesSpawned", new CreatureSpawnListener());
+        eventCountListeners.put("EntityDeaths", new EntityDeathListener());
+        eventCountListeners.put("InventoriesClosed", new InventoryCloseListener());
+        eventCountListeners.put("InventoriesOpened", new InventoryOpenListener());
+        eventCountListeners.put("InventoryClicks", new InventoryClickListener());
+        eventCountListeners.put("InventoryDrags", new InventoryDragListener());
+        eventCountListeners.put("ItemsDespawned", new ItemSpawnListener());
+        eventCountListeners.put("ItemsSpawned", new ItemDespawnListener());
+        eventCountListeners.put("PlayerDropItems", new PlayerDropItemListener());
+        eventCountListeners.put("PlayerExperienceChanges", new PlayerExpChangeListener());
+        eventCountListeners.put("PlayerInteractions", new PlayerInteractListener());
+        eventCountListeners.put("ProjectilesLaunched", new ProjectileLaunchListener());
+        eventCountListeners.put("StructuresGrown", new StructureGrowListener());
+        eventCountListeners.put("TradesSelected", new TradeSelectListener());
+
+        for (Map.Entry<String, EventCountListener> entry : eventCountListeners.entrySet()) {
+            final EventCountListener listener = entry.getValue();
+            pluginManager.registerEvents(listener, this);
+        }
 
         javaStatisticsExecutor = Executors.newSingleThreadScheduledExecutor();
         javaStatisticsExecutor.scheduleAtFixedRate(new JavaStatisticsRunnable(), 0, 1, TimeUnit.MINUTES);
