@@ -22,7 +22,7 @@
 - System CPU Load
 
  ## Minecraft Statistics
- All Minecraft statistics collected are per minute and represent the maximum value, count or total time during that period, unless otherwise specified.
+ All Minecraft statistics collected are per minute and represent the maximum value, count or total time during that period.
 
 - Number of Online Players
 - Maximum Tick Time
