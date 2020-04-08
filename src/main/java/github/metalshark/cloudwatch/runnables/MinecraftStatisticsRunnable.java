@@ -2,7 +2,6 @@ package github.metalshark.cloudwatch.runnables;
 
 import github.metalshark.cloudwatch.CloudWatch;
 import github.metalshark.cloudwatch.listeners.*;
-import org.apache.commons.lang.ArrayUtils;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.*;
 
@@ -13,17 +12,29 @@ public class MinecraftStatisticsRunnable implements Runnable {
 
     @Override
     public void run() {
+        final CloudWatch plugin = CloudWatch.getPlugin();
         final Dimension dimension = CloudWatch.getDimension();
 
-        final double onlinePlayers = PlayerJoinListener.maxOnlinePlayers;
-        PlayerJoinListener.maxOnlinePlayers = 0;
-        final double maxTickTime = TickRunnable.maxElapsedMillis;
-        TickRunnable.maxElapsedMillis = 0;
-        final double ticksPerSecond = TickRunnable.numberOfTicks / 60;
-        TickRunnable.numberOfTicks = 0;
+        final ChunkLoadListener chunkLoadListener = plugin.getChunkLoadListener();
+        final double chunksLoaded = chunkLoadListener.getCount();
+
+        final PlayerJoinListener playerJoinListener = plugin.getPlayerJoinListener();
+        final double onlinePlayers = playerJoinListener.getMaxOnlinePlayersAndReset();
+
+        final TickRunnable tickRunnable = plugin.getTickRunnable();
+        final double maxTickTime = tickRunnable.getMaxElapsedMillisAndReset();
+        final double ticksPerMinute = tickRunnable.getNumberOfTicksAndReset();
+        final double ticksPerSecond = ticksPerMinute / 60;
 
         try (final CloudWatchClient cw = CloudWatchClient.builder().build()) {
 
+            final MetricDatum chunksLoadedMetric = MetricDatum
+                .builder()
+                .metricName("ChunksLoaded")
+                .unit(StandardUnit.COUNT)
+                .value(chunksLoaded)
+                .dimensions(dimension)
+                .build();
             final MetricDatum onlinePlayersMetric = MetricDatum
                 .builder()
                 .metricName("OnlinePlayers")
@@ -47,6 +58,7 @@ public class MinecraftStatisticsRunnable implements Runnable {
                 .build();
 
             final Set<MetricDatum> metricDatumSet = new HashSet<>();
+            metricDatumSet.add(chunksLoadedMetric);
             metricDatumSet.add(maxTickTimeMetric);
             metricDatumSet.add(onlinePlayersMetric);
             metricDatumSet.add(ticksPerSecondMetric);
@@ -54,8 +66,7 @@ public class MinecraftStatisticsRunnable implements Runnable {
             CloudWatch
                 .getEventCountListeners()
                 .forEach((name, listener) -> {
-                    final double count = listener.count;
-                    listener.count = 0;
+                    final double count = listener.getCountAndReset();
                     metricDatumSet.add(MetricDatum
                         .builder()
                         .metricName(name)

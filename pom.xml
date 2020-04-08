@@ -6,7 +6,7 @@
 
     <groupId>github.metalshark.cloudwatch</groupId>
     <artifactId>CloudWatch</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
 
     <name>CloudWatch</name>
     <description>CloudWatch statistic logging for Minecraft Servers.</description>
@@ -40,6 +40,7 @@
     </scm>
 
     <build>
+        <defaultGoal>clean package</defaultGoal>
         <!-- Uses the properties in this file for plugin.yml and config.yml -->
         <resources>
             <resource>
@@ -61,6 +62,15 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <!-- Sets the custom JAR file name (Project name without spaces is good) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <finalName>${project.name}-${project.version}</finalName>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -75,18 +85,11 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
+                            <finalName>${project.name}-${project.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <!-- Sets the custom JAR file name (Project name without spaces is good) -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <finalName>${project.name}-${project.version}</finalName>
-                </configuration>
             </plugin>
         </plugins>
     </build>

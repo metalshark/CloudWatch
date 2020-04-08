@@ -1,5 +1,6 @@
 package github.metalshark.cloudwatch;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import github.metalshark.cloudwatch.listeners.*;
 import github.metalshark.cloudwatch.runnables.JavaStatisticsRunnable;
 import github.metalshark.cloudwatch.runnables.MinecraftStatisticsRunnable;
@@ -9,27 +10,42 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class CloudWatch extends JavaPlugin {
 
-    private Listener playerJoinListener = new PlayerJoinListener();
+    @Getter
+    private ChunkLoadListener chunkLoadListener = new ChunkLoadListener();
 
-    @Getter private final static Map<String, EventCountListener> eventCountListeners = new ConcurrentHashMap<>();
+    @Getter
+    private PlayerJoinListener playerJoinListener = new PlayerJoinListener();
+
+    @Getter
+    private TickRunnable tickRunnable = new TickRunnable();
+
+    @Getter
+    private final static Map<String, EventCountListener> eventCountListeners = new ConcurrentHashMap<>();
+
+    private final static ThreadFactory javaStatisticsThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat("CloudWatch - Java Statistics")
+        .build();
+    private final static ThreadFactory minecraftStatisticsThreadFactory = new ThreadFactoryBuilder()
+        .setNameFormat("CloudWatch - Minecraft Statistics")
+        .build();
 
     private ScheduledExecutorService javaStatisticsExecutor;
     private ScheduledExecutorService minecraftStatisticsExecutor;
 
-    @Getter private final static Dimension dimension = Dimension
+    @Getter
+    private final static Dimension dimension = Dimension
         .builder()
         .name("Per-Instance Metrics")
         .value(EC2MetadataUtils.getInstanceId())
@@ -39,11 +55,10 @@ public class CloudWatch extends JavaPlugin {
     public void onEnable() {
         final PluginManager pluginManager = Bukkit.getPluginManager();
 
+        pluginManager.registerEvents(chunkLoadListener.init(), this);
         pluginManager.registerEvents(playerJoinListener, this);
 
-        eventCountListeners.put("ChunksLoaded", new ChunkLoadListener());
         eventCountListeners.put("ChunksPopulated", new ChunkPopulateListener());
-        eventCountListeners.put("ChunksUnloaded", new ChunkUnloadListener());
         eventCountListeners.put("CreaturesSpawned", new CreatureSpawnListener());
         eventCountListeners.put("EntityDeaths", new EntityDeathListener());
         eventCountListeners.put("InventoriesClosed", new InventoryCloseListener());
@@ -64,17 +79,19 @@ public class CloudWatch extends JavaPlugin {
             pluginManager.registerEvents(listener, this);
         }
 
-        javaStatisticsExecutor = Executors.newSingleThreadScheduledExecutor();
+        javaStatisticsExecutor = Executors.newSingleThreadScheduledExecutor(javaStatisticsThreadFactory);
         javaStatisticsExecutor.scheduleAtFixedRate(new JavaStatisticsRunnable(), 0, 1, TimeUnit.MINUTES);
 
-        minecraftStatisticsExecutor = Executors.newSingleThreadScheduledExecutor();
+        minecraftStatisticsExecutor = Executors.newSingleThreadScheduledExecutor(minecraftStatisticsThreadFactory);
         minecraftStatisticsExecutor.scheduleAtFixedRate(new MinecraftStatisticsRunnable(), 0, 1, TimeUnit.MINUTES);
 
-        Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(this, new TickRunnable(), 1, 1);
+        Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(this, tickRunnable, 1, 1);
     }
 
     @Override
     public void onDisable() {
+        ChunkLoadEvent.getHandlerList().unregister(chunkLoadListener);
+        ChunkUnloadEvent.getHandlerList().unregister(chunkLoadListener);
         PlayerJoinEvent.getHandlerList().unregister(playerJoinListener);
 
         for (Map.Entry<String, EventCountListener> entry : eventCountListeners.entrySet()) {
