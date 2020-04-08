@@ -9,7 +9,7 @@ public class TickRunnable implements Runnable {
     @Override
     public synchronized void run() {
         final long timeMillis = System.currentTimeMillis();
-        final long elapsedMillis = lastTimeMillis - timeMillis;
+        final long elapsedMillis = timeMillis - lastTimeMillis;
         if (elapsedMillis > maxElapsedMillis) maxElapsedMillis = elapsedMillis;
         lastTimeMillis = timeMillis;
         numberOfTicks++;
