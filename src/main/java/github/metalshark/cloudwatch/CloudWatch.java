@@ -108,8 +108,8 @@ public class CloudWatch extends JavaPlugin {
             HandlerList.unregisterAll(listener);
         }
 
-        javaStatisticsExecutor.shutdown();
-        minecraftStatisticsExecutor.shutdown();
+        if (javaStatisticsExecutor != null) javaStatisticsExecutor.shutdown();
+        if (minecraftStatisticsExecutor != null) minecraftStatisticsExecutor.shutdown();
     }
 
     public static CloudWatch getPlugin() {
