@@ -52,10 +52,10 @@ public class CloudWatch extends JavaPlugin {
     public void onEnable() {
         try {
             dimension = Dimension
-                    .builder()
-                    .name("Per-Instance Metrics")
-                    .value(EC2MetadataUtils.getInstanceId())
-                    .build();
+                .builder()
+                .name("Per-Instance Metrics")
+                .value(EC2MetadataUtils.getInstanceId())
+                .build();
         } catch (SdkClientException exception) {
             getLogger().warning("The CloudWatch plugin only works on EC2 instances.");
             this.setEnabled(false);
