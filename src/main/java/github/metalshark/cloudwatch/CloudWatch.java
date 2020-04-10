@@ -14,6 +14,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.internal.util.EC2MetadataUtils;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 
@@ -45,14 +46,22 @@ public class CloudWatch extends JavaPlugin {
     private ScheduledExecutorService minecraftStatisticsExecutor;
 
     @Getter
-    private final static Dimension dimension = Dimension
-        .builder()
-        .name("Per-Instance Metrics")
-        .value(EC2MetadataUtils.getInstanceId())
-        .build();
+    private static Dimension dimension;
 
     @Override
     public void onEnable() {
+        try {
+            dimension = Dimension
+                    .builder()
+                    .name("Per-Instance Metrics")
+                    .value(EC2MetadataUtils.getInstanceId())
+                    .build();
+        } catch (SdkClientException exception) {
+            getLogger().warning("The CloudWatch plugin only works on EC2 instances.");
+            this.setEnabled(false);
+            return;
+        }
+
         final PluginManager pluginManager = Bukkit.getPluginManager();
 
         pluginManager.registerEvents(chunkLoadListener.init(), this);
