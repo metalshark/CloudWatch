@@ -6,7 +6,7 @@
 
     <groupId>github.metalshark.cloudwatch</groupId>
     <artifactId>CloudWatch</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 
     <name>CloudWatch</name>
     <description>CloudWatch statistic logging for Minecraft Servers.</description>
@@ -142,7 +142,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.12</version>
+            <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
 

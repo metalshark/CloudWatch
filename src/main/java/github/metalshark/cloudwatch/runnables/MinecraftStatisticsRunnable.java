@@ -19,7 +19,7 @@ public class MinecraftStatisticsRunnable implements Runnable {
         final double chunksLoaded = chunkLoadListener.getMaxAndReset();
 
         final PlayerJoinListener playerJoinListener = plugin.getPlayerJoinListener();
-        final double onlinePlayers = playerJoinListener.getMaxOnlinePlayersAndReset();
+        final double onlinePlayers = playerJoinListener.getMaxAndReset();
 
         final TickRunnable tickRunnable = plugin.getTickRunnable();
         final double maxTickTime = tickRunnable.getMaxElapsedMillisAndReset();

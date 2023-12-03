@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.plugin.PluginManager;
@@ -65,7 +66,7 @@ public class CloudWatch extends JavaPlugin {
         final PluginManager pluginManager = Bukkit.getPluginManager();
 
         pluginManager.registerEvents(chunkLoadListener.init(), this);
-        pluginManager.registerEvents(playerJoinListener, this);
+        pluginManager.registerEvents(playerJoinListener.init(), this);
 
         eventCountListeners.put("ChunksPopulated", new ChunkPopulateListener());
         eventCountListeners.put("CreaturesSpawned", new CreatureSpawnListener());
@@ -102,6 +103,7 @@ public class CloudWatch extends JavaPlugin {
         ChunkLoadEvent.getHandlerList().unregister(chunkLoadListener);
         ChunkUnloadEvent.getHandlerList().unregister(chunkLoadListener);
         PlayerJoinEvent.getHandlerList().unregister(playerJoinListener);
+        PlayerQuitEvent.getHandlerList().unregister(playerJoinListener);
 
         for (Map.Entry<String, EventCountListener> entry : eventCountListeners.entrySet()) {
             final Listener listener = entry.getValue();
