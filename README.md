@@ -1,6 +1,8 @@
 # CloudWatch
  [AWS CloudWatch](https://aws.amazon.com/cloudwatch/) monitoring plugin for Minecraft.
 
+ No longer actively maintained. Pleas see https://github.com/MatthewDietrich/CloudWatch instead.
+
  Requires the [Systems Manager](https://aws.amazon.com/systems-manager/) agent to have a role with the `cloudwatch:PutMetricData` [permission](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/permissions-reference-cw.html). This plugin is designed for Unix Operating Systems, such as Linux, and some statistics may not be recorded on other operating systems.
 
  ## Java Statistics
